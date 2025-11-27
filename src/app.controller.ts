@@ -1,9 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
+import { PrismaService } from './prisma/prisma.service';
 
-@Controller()
+@Controller('api')
 export class AppController {
-  @Get('api/ping')
-  getPing(): string {
-    return 'pong';
+  constructor(private prisma: PrismaService) {}
+
+  @Get('db-health')
+  async dbHealth() {
+    const now = await this.prisma.$queryRaw`SELECT NOW()`;
+    return { ok: true, now };
   }
 }

@@ -1,0 +1,50 @@
+import { IsDateString, IsInt, IsOptional, IsString, Min, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class CreateSetDto {
+  @IsString()
+  exercise: string;
+
+  @IsInt()
+  @Min(1)
+  reps: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  weight?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  intensity?: number;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+export class CreateWorkoutDto {
+  @IsOptional()
+  @IsDateString()
+  date?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateSetDto)
+  sets: CreateSetDto[];
+}
+
+export class UpdateWorkoutDto {
+  @IsOptional()
+  @IsDateString()
+  date?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
