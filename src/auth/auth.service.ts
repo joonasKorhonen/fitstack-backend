@@ -12,8 +12,9 @@ export class AuthService {
     const existing = await this.prisma.user.findUnique({ where: { username } });
     if (existing) throw new BadRequestException('Username already exists');
     const hashed = await bcrypt.hash(password, 10);
-    await this.prisma.user.create({ data: { username, password: hashed } });
-    return { message: 'User registered successfully' };
+    const user = await this.prisma.user.create({ data: { username, password: hashed } });
+    const token = jwt.sign({ userId: user.id, username: user.username }, this.JWT_SECRET, { expiresIn: '2h' });
+    return { token };
   }
 
   async login(username: string, password: string) {
