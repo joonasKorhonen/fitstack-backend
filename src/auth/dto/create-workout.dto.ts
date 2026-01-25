@@ -2,8 +2,13 @@ import { IsDateString, IsInt, IsOptional, IsString, Min, IsArray, ValidateNested
 import { Type } from 'class-transformer';
 
 export class CreateSetDto {
+  @IsOptional()
   @IsString()
-  exercise: string;
+  exercise?: string;
+
+  @IsOptional()
+  @IsInt()
+  movementId?: number;
 
   @IsInt()
   @Min(1)

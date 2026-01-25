@@ -1,44 +1,89 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateWorkoutDto, UpdateWorkoutDto } from '../auth/dto/create-workout.dto';
+import { MovementsService } from '../movements/movements.service';
 
 @Injectable()
 export class WorkoutsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private movementsService: MovementsService,
+  ) {}
 
   async create(userId: number, dto: CreateWorkoutDto) {
     if (!dto.sets || dto.sets.length === 0) {
       throw new Error('Workout must have at least one set');
     }
 
-    const firstSet = dto.sets[0];
+    // Process sets to ensure movementId is set
+    const processedSets = await Promise.all(
+      dto.sets.map(async (set) => {
+        let movementId = set.movementId;
+
+        // If movementId not provided but exercise string is, find or create movement
+        if (!movementId && set.exercise) {
+          const movement = await this.movementsService.findOrCreate(
+            userId,
+            set.exercise,
+          );
+          movementId = movement.id;
+        }
+
+        return {
+          movementId,
+          reps: set.reps,
+          weight: set.weight ?? null,
+          intensity: set.intensity ?? null,
+          notes: set.notes ?? null,
+          exercise: set.exercise ?? null,
+        };
+      }),
+    );
+
+    const firstSet = processedSets[0];
 
     return this.prisma.workout.create({
       data: {
         userId,
         date: dto.date ? new Date(dto.date) : new Date(),
         notes: dto.notes ?? null,
-        exercise: firstSet.exercise,
+        exercise: firstSet.exercise ?? 'Movement',
         reps: firstSet.reps,
         weight: firstSet.weight ?? null,
         sets: {
-          create: dto.sets.map((set) => ({
-            exercise: set.exercise,
-            reps: set.reps,
-            weight: set.weight ?? null,
-            intensity: set.intensity ?? null,
-            notes: set.notes ?? null,
-          })),
+          create: processedSets,
         },
       },
-      include: { sets: true },
+      include: {
+        sets: {
+          include: {
+            movement: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
   async findAllForUser(userId: number) {
     return this.prisma.workout.findMany({
       where: { userId },
-      include: { sets: true },
+      include: {
+        sets: {
+          include: {
+            movement: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
       orderBy: { date: 'desc' },
     });
   }
@@ -46,7 +91,18 @@ export class WorkoutsService {
   async findOne(userId: number, id: number) {
     return this.prisma.workout.findFirst({
       where: { id, userId },
-      include: { sets: true },
+      include: {
+        sets: {
+          include: {
+            movement: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
