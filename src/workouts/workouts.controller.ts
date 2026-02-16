@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { WorkoutsService } from './workouts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CreateWorkoutDto, UpdateWorkoutDto } from '../auth/dto/create-workout.dto';
+import { CreateWorkoutDto, UpdateWorkoutDto } from './dto/create-workout.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('workouts')
