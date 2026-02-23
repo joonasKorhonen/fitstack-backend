@@ -7,15 +7,15 @@ services:
     container_name: fitstack-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: fitstack
-      POSTGRES_PASSWORD: fitstack_dev_password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: fitstack
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U fitstack"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,7 +28,7 @@ services:
     container_name: fitstack-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://fitstack:fitstack_dev_password@db:5432/fitstack
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/fitstack
       JWT_SECRET: your-secret-key-change-in-production
       PORT: 3000
     ports:
