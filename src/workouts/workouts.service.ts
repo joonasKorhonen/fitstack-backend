@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateWorkoutDto, UpdateWorkoutDto } from './dto/create-workout.dto';
+import { CreateWorkoutDto, UpdateWorkoutDto, AddSetsDto } from './dto/create-workout.dto';
 import { MovementsService } from '../movements/movements.service';
 
 @Injectable()
@@ -121,6 +121,42 @@ export class WorkoutsService {
     return this.prisma.workout.deleteMany({
       where: { id, userId },
     });
+  }
+
+  async addSets(userId: number, workoutId: number, dto: AddSetsDto) {
+    // Verify workout belongs to user
+    const workout = await this.prisma.workout.findFirst({
+      where: { id: workoutId, userId },
+    });
+    if (!workout) {
+      throw new Error('Workout not found');
+    }
+
+    const processedSets = await Promise.all(
+      dto.sets.map(async (set) => {
+        let movementId = set.movementId;
+        if (!movementId && set.exercise) {
+          const movement = await this.movementsService.findOrCreate(
+            userId,
+            set.exercise,
+          );
+          movementId = movement.id;
+        }
+        return {
+          workoutId,
+          movementId,
+          reps: set.reps,
+          weight: set.weight ?? null,
+          intensity: set.intensity ?? null,
+          notes: set.notes ?? null,
+          exercise: set.exercise ?? null,
+        };
+      }),
+    );
+
+    await this.prisma.workoutSet.createMany({ data: processedSets });
+
+    return this.findOne(userId, workoutId);
   }
 
   async deleteSet(workoutId: number, setId: number) {

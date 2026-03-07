@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { WorkoutsService } from './workouts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CreateWorkoutDto, UpdateWorkoutDto } from './dto/create-workout.dto';
+import { CreateWorkoutDto, UpdateWorkoutDto, AddSetsDto } from './dto/create-workout.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('workouts')
@@ -64,6 +64,16 @@ export class WorkoutsController {
   ) {
     const userId = req.user.userId;
     return this.workoutsService.deleteWorkout(userId, id);
+  }
+
+  @Post(':id/sets')
+  async addSets(
+    @Request() req,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AddSetsDto,
+  ) {
+    const userId = req.user.userId;
+    return this.workoutsService.addSets(userId, id, dto);
   }
 
   @Delete(':workoutId/sets/:setId')

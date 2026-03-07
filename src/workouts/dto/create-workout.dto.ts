@@ -53,3 +53,10 @@ export class UpdateWorkoutDto {
   @IsString()
   notes?: string;
 }
+
+export class AddSetsDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateSetDto)
+  sets: CreateSetDto[];
+}
