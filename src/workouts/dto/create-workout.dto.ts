@@ -1,4 +1,4 @@
-import { IsDateString, IsInt, IsOptional, IsString, Min, IsArray, ValidateNested } from 'class-validator';
+import { IsDateString, IsInt, IsOptional, IsString, Min, Max, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateSetDto {
@@ -21,7 +21,8 @@ export class CreateSetDto {
 
   @IsOptional()
   @IsInt()
-  @Min(0)
+  @Min(1)
+  @Max(10)
   intensity?: number;
 
   @IsOptional()
