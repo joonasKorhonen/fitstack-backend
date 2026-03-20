@@ -55,6 +55,28 @@ export class UpdateWorkoutDto {
   notes?: string;
 }
 
+export class UpdateSetDto {
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  reps?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  weight?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  intensity?: number;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
 export class AddSetsDto {
   @IsArray()
   @ValidateNested({ each: true })

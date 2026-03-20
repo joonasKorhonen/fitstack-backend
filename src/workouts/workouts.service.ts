@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateWorkoutDto, UpdateWorkoutDto, AddSetsDto } from './dto/create-workout.dto';
+import { CreateWorkoutDto, UpdateWorkoutDto, AddSetsDto, UpdateSetDto } from './dto/create-workout.dto';
 import { MovementsService } from '../movements/movements.service';
 
 @Injectable()
@@ -157,6 +157,18 @@ export class WorkoutsService {
     await this.prisma.workoutSet.createMany({ data: processedSets });
 
     return this.findOne(userId, workoutId);
+  }
+
+  async updateSet(workoutId: number, setId: number, dto: UpdateSetDto) {
+    return this.prisma.workoutSet.updateMany({
+      where: { id: setId, workoutId },
+      data: {
+        reps: dto.reps,
+        weight: dto.weight,
+        intensity: dto.intensity,
+        notes: dto.notes,
+      },
+    });
   }
 
   async deleteSet(workoutId: number, setId: number) {
