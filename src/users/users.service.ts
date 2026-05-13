@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { S3Service } from '../s3/s3.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import * as bcrypt from 'bcrypt';
@@ -11,7 +12,10 @@ import { User } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private s3: S3Service,
+  ) {}
 
   async findById(userId: number): Promise<UserResponseDto> {
     const user = await this.prisma.user.findUnique({
@@ -19,6 +23,7 @@ export class UsersService {
       select: {
         id: true,
         username: true,
+        avatarUrl: true,
         createdAt: true,
       },
     });
@@ -69,6 +74,7 @@ export class UsersService {
       select: {
         id: true,
         username: true,
+        avatarUrl: true,
         createdAt: true,
       },
     });
@@ -77,10 +83,78 @@ export class UsersService {
   }
 
   async deleteUser(userId: number): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatarUrl: true },
+    });
+
+    if (user?.avatarUrl) {
+      await this.s3.deleteByUrl(user.avatarUrl);
+    }
+
     await this.prisma.user.delete({
       where: { id: userId },
     });
 
     return { message: 'Käyttäjätili poistettu onnistuneesti' };
+  }
+
+  async updateAvatar(
+    userId: number,
+    file: Express.Multer.File,
+  ): Promise<UserResponseDto> {
+    const existing = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatarUrl: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Käyttäjää ei löytynyt');
+    }
+
+    const url = await this.s3.uploadFile(file, `avatars/${userId}`);
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: url },
+      select: {
+        id: true,
+        username: true,
+        avatarUrl: true,
+        createdAt: true,
+      },
+    });
+
+    if (existing.avatarUrl) {
+      await this.s3.deleteByUrl(existing.avatarUrl);
+    }
+
+    return updated;
+  }
+
+  async deleteAvatar(userId: number): Promise<UserResponseDto> {
+    const existing = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatarUrl: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Käyttäjää ei löytynyt');
+    }
+
+    if (existing.avatarUrl) {
+      await this.s3.deleteByUrl(existing.avatarUrl);
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: null },
+      select: {
+        id: true,
+        username: true,
+        avatarUrl: true,
+        createdAt: true,
+      },
+    });
   }
 }
