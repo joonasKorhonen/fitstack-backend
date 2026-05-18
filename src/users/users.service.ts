@@ -8,7 +8,11 @@ import { S3Service } from '../s3/s3.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import * as bcrypt from 'bcrypt';
+import * as sharp from 'sharp';
 import { User } from '@prisma/client';
+
+const AVATAR_SIZE = 512;
+const AVATAR_QUALITY = 85;
 
 @Injectable()
 export class UsersService {
@@ -112,7 +116,21 @@ export class UsersService {
       throw new NotFoundException('Käyttäjää ei löytynyt');
     }
 
-    const url = await this.s3.uploadFile(file, `avatars/${userId}`);
+    const processed = await sharp(file.buffer)
+      .rotate()
+      .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: 'cover', position: 'centre' })
+      .webp({ quality: AVATAR_QUALITY })
+      .toBuffer();
+
+    const url = await this.s3.uploadFile(
+      {
+        ...file,
+        buffer: processed,
+        mimetype: 'image/webp',
+        originalname: 'avatar.webp',
+      },
+      `avatars/${userId}`,
+    );
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
