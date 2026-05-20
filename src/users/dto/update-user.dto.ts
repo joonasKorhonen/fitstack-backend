@@ -1,4 +1,10 @@
-import { IsString, MinLength, MaxLength, IsOptional } from 'class-validator';
+import {
+  IsString,
+  MinLength,
+  MaxLength,
+  IsOptional,
+  IsEmail,
+} from 'class-validator';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -6,6 +12,11 @@ export class UpdateUserDto {
   @MinLength(3, { message: 'Käyttäjänimen on oltava vähintään 3 merkkiä' })
   @MaxLength(20, { message: 'Käyttäjänimi saa olla korkeintaan 20 merkkiä' })
   username?: string;
+
+  @IsOptional()
+  @IsEmail({}, { message: 'Sähköpostiosoite ei ole kelvollinen' })
+  @MaxLength(254)
+  email?: string;
 
   @IsOptional()
   @IsString()

@@ -27,6 +27,7 @@ export class UsersService {
       select: {
         id: true,
         username: true,
+        email: true,
         avatarUrl: true,
         createdAt: true,
       },
@@ -51,7 +52,6 @@ export class UsersService {
   ): Promise<UserResponseDto> {
     const updateData: any = {};
 
-    // Check if username is being changed
     if (dto.username) {
       const existing = await this.findByUsername(dto.username);
       if (existing && existing.id !== userId) {
@@ -60,15 +60,23 @@ export class UsersService {
       updateData.username = dto.username;
     }
 
-    // Re-hash password if being changed
+    if (dto.email) {
+      const existing = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
+      if (existing && existing.id !== userId) {
+        throw new BadRequestException('Sähköpostiosoite on jo käytössä');
+      }
+      updateData.email = dto.email;
+    }
+
     if (dto.password) {
       updateData.password = await bcrypt.hash(dto.password, 10);
     }
 
-    // Require at least one field to update
     if (Object.keys(updateData).length === 0) {
       throw new BadRequestException(
-        'Vähintään yksi kenttä (username tai password) on annettava',
+        'Vähintään yksi kenttä (username, email tai password) on annettava',
       );
     }
 
@@ -78,6 +86,7 @@ export class UsersService {
       select: {
         id: true,
         username: true,
+        email: true,
         avatarUrl: true,
         createdAt: true,
       },
@@ -138,6 +147,7 @@ export class UsersService {
       select: {
         id: true,
         username: true,
+        email: true,
         avatarUrl: true,
         createdAt: true,
       },
@@ -170,6 +180,7 @@ export class UsersService {
       select: {
         id: true,
         username: true,
+        email: true,
         avatarUrl: true,
         createdAt: true,
       },
