@@ -1,98 +1,156 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# FitStack Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+REST API for **FitStack**, a fitness tracking app where users log workouts (with sets, reps, weight, and intensity), define custom exercises, track meals with macronutrients, and manage their profile.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tech Stack
 
-## Description
+- **NestJS 11** (TypeScript, Express)
+- **PostgreSQL 16** via **Prisma 6** ORM
+- **JWT** auth with refresh token rotation
+- **AWS S3** for profile picture storage (with server-side image resizing via `sharp`)
+- **AWS SES** for password reset emails
+- **Docker Compose** for local development
+- Validation via `class-validator` / `class-transformer`
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Features
 
-## Project setup
+- **Auth** — register, login, refresh tokens, logout, forgot/reset password
+- **Users** — profile fetch/update/delete, avatar upload (jpeg/png/webp, 5 MB max, auto-resized to 512×512 WebP)
+- **Workouts** — log workouts with multiple sets, exercises, reps, weight, intensity, and notes
+- **Movements** — user-defined custom exercise library
+- **Meals** — track meals with calories, protein, carbs, fat
+- All routes (except `auth/*`) are JWT-protected
+
+## Prerequisites
+
+- Node.js 20+
+- Docker (for local Postgres) or a local PostgreSQL instance
+- AWS account with:
+  - An S3 bucket (public read for objects, scoped IAM credentials)
+  - A verified SES sender identity (sandbox mode is fine for development)
+
+## Setup
+
+### 1. Install dependencies
 
 ```bash
-$ npm install
+npm install
 ```
 
-## Compile and run the project
+### 2. Configure environment
+
+Copy `.env.example` to `.env` and fill in the values:
 
 ```bash
-# development
-$ npm run start
+cp .env.example .env
+```
 
+Required variables:
+
+| Variable                | Purpose                                                    |
+| ----------------------- | ---------------------------------------------------------- |
+| `DATABASE_URL`          | PostgreSQL connection string                               |
+| `JWT_SECRET`            | Secret for signing access tokens                           |
+| `PORT`                  | Application port (defaults to 3001)                        |
+| `AWS_ACCESS_KEY_ID`     | IAM user access key                                        |
+| `AWS_SECRET_ACCESS_KEY` | IAM user secret                                            |
+| `AWS_REGION`            | AWS region for S3 & SES (e.g. `eu-north-1`)                |
+| `AWS_S3_BUCKET`         | S3 bucket name for avatar uploads                          |
+| `AWS_SES_FROM_EMAIL`    | Verified SES sender address                                |
+| `FRONTEND_URL`          | Base URL used in password reset email links                |
+
+### 3. Start the database
+
+Using Docker:
+
+```bash
+npm run docker:up
+```
+
+Or point `DATABASE_URL` at a local Postgres instance.
+
+### 4. Apply Prisma migrations
+
+```bash
+npx prisma migrate dev
+```
+
+### 5. Run the API
+
+```bash
 # watch mode
-$ npm run start:dev
+npm run start:dev
 
-# production mode
-$ npm run start:prod
+# production
+npm run build && npm run start:prod
 ```
 
-## Run tests
+The API listens on `http://localhost:3001/api` by default.
 
-```bash
-# unit tests
-$ npm run test
+## API Overview
 
-# e2e tests
-$ npm run test:e2e
+All routes are mounted under `/api`.
 
-# test coverage
-$ npm run test:cov
+### Auth (`/auth`)
+
+| Method | Path                | Description                                        |
+| ------ | ------------------- | -------------------------------------------------- |
+| POST   | `/register`         | Create account (`username`, `password`, optional `email`) |
+| POST   | `/login`            | Returns access + refresh tokens                    |
+| POST   | `/refresh`          | Rotate refresh token, issue new access token       |
+| POST   | `/logout`           | Invalidate refresh token                           |
+| POST   | `/forgot-password`  | Send reset link to verified email                  |
+| POST   | `/reset-password`   | Submit token + new password                        |
+
+### Users (`/users`) — JWT required
+
+| Method | Path       | Description                          |
+| ------ | ---------- | ------------------------------------ |
+| GET    | `/profile` | Current user                         |
+| PATCH  | `/profile` | Update `username`, `email`, `password` |
+| DELETE | `/profile` | Delete account (also deletes avatar from S3) |
+| POST   | `/avatar`  | Upload profile picture (multipart, field `file`) |
+| DELETE | `/avatar`  | Remove current avatar                |
+
+### Workouts (`/workouts`) — JWT required
+
+CRUD for workouts and their sets, plus an endpoint to append a set to an existing workout.
+
+### Movements (`/movements`) — JWT required
+
+CRUD for the user's custom exercise library.
+
+### Meals (`/meals`) — JWT required
+
+CRUD for meals with macronutrient fields.
+
+## Scripts
+
+| Command                   | Purpose                              |
+| ------------------------- | ------------------------------------ |
+| `npm run start:dev`       | Watch mode dev server                |
+| `npm run build`           | Compile to `dist/`                   |
+| `npm run start:prod`      | Run compiled build                   |
+| `npm run lint`            | ESLint with autofix                  |
+| `npm run format`          | Prettier write                       |
+| `npm run test`            | Unit tests                           |
+| `npm run test:e2e`        | End-to-end tests                     |
+| `npm run docker:up`       | Start Postgres + backend in Docker   |
+| `npm run docker:down`     | Stop Docker stack                    |
+| `npm run docker:logs`     | Tail backend container logs          |
+
+## Project Structure
+
 ```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+src/
+├── auth/        JWT auth, registration, password reset
+├── users/       Profile management, avatar uploads
+├── workouts/    Workout + WorkoutSet endpoints
+├── movements/   Custom exercise library
+├── meals/       Meal tracking
+├── mail/        AWS SES wrapper (transactional emails)
+├── s3/          AWS S3 wrapper (file uploads)
+├── prisma/      Prisma client module
+├── app.module.ts
+└── main.ts
 ```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
