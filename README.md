@@ -1,5 +1,7 @@
 # FitStack Backend
 
+[![CI](https://github.com/joonasKorhonen/fitstack-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/joonasKorhonen/fitstack-backend/actions/workflows/ci.yml)
+
 REST API for **FitStack**, a fitness tracking app where users log workouts (with sets, reps, weight, and intensity), define custom exercises, track meals with macronutrients, and manage their profile.
 
 ## Tech Stack
