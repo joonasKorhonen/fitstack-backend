@@ -1,4 +1,13 @@
-import { IsDateString, IsInt, IsOptional, IsString, Min, Max, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  Max,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateSetDto {

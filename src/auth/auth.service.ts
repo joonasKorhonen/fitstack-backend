@@ -107,8 +107,7 @@ export class AuthService {
   }
 
   async refresh(rawRefreshToken: string) {
-    const tokenRecord =
-      await this.findAndValidateRefreshToken(rawRefreshToken);
+    const tokenRecord = await this.findAndValidateRefreshToken(rawRefreshToken);
 
     // Token rotation: delete old, create new
     await this.prisma.refreshToken.delete({
@@ -160,8 +159,7 @@ export class AuthService {
         },
       });
 
-      const frontendUrl =
-        process.env.FRONTEND_URL || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
 
       await this.mail.sendPasswordReset(email, resetUrl);
@@ -187,7 +185,9 @@ export class AuthService {
     });
 
     if (!record || record.expiresAt < new Date()) {
-      throw new BadRequestException('Palautuslinkki on virheellinen tai vanhentunut');
+      throw new BadRequestException(
+        'Palautuslinkki on virheellinen tai vanhentunut',
+      );
     }
 
     const hashed = await bcrypt.hash(newPassword, 10);

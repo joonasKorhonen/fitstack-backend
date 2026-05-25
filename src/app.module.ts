@@ -7,6 +7,13 @@ import { MovementsModule } from './movements/movements.module';
 import { MealsModule } from './meals/meals.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, UsersModule, WorkoutsModule, MovementsModule, MealsModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    UsersModule,
+    WorkoutsModule,
+    MovementsModule,
+    MealsModule,
+  ],
 })
 export class AppModule {}

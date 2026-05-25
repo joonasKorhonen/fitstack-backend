@@ -12,7 +12,13 @@ import {
 } from '@nestjs/common';
 import { WorkoutsService } from './workouts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CreateWorkoutDto, UpdateWorkoutDto, AddSetsDto, UpdateSetDto } from './dto/create-workout.dto';
+import { AuthenticatedRequest } from '../auth/types/authenticated-request';
+import {
+  CreateWorkoutDto,
+  UpdateWorkoutDto,
+  AddSetsDto,
+  UpdateSetDto,
+} from './dto/create-workout.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('workouts')
@@ -20,7 +26,10 @@ export class WorkoutsController {
   constructor(private readonly workoutsService: WorkoutsService) {}
 
   @Post()
-  async create(@Request() req, @Body() dto: CreateWorkoutDto) {
+  async create(
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: CreateWorkoutDto,
+  ) {
     try {
       const userId = req.user.userId;
       console.log('Creating workout for userId:', userId);
@@ -33,14 +42,14 @@ export class WorkoutsController {
   }
 
   @Get()
-  async findAll(@Request() req) {
+  async findAll(@Request() req: AuthenticatedRequest) {
     const userId = req.user.userId;
     return this.workoutsService.findAllForUser(userId);
   }
 
   @Get(':id')
   async findOne(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
   ) {
     const userId = req.user.userId;
@@ -49,7 +58,7 @@ export class WorkoutsController {
 
   @Patch(':id')
   async updateWorkout(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateWorkoutDto,
   ) {
@@ -59,7 +68,7 @@ export class WorkoutsController {
 
   @Delete(':id')
   async deleteWorkout(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
   ) {
     const userId = req.user.userId;
@@ -68,7 +77,7 @@ export class WorkoutsController {
 
   @Post(':id/sets')
   async addSets(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AddSetsDto,
   ) {

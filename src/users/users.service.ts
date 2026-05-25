@@ -9,7 +9,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import * as bcrypt from 'bcrypt';
 import * as sharp from 'sharp';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 
 const AVATAR_SIZE = 512;
 const AVATAR_QUALITY = 85;
@@ -50,7 +50,7 @@ export class UsersService {
     userId: number,
     dto: UpdateUserDto,
   ): Promise<UserResponseDto> {
-    const updateData: any = {};
+    const updateData: Prisma.UserUpdateInput = {};
 
     if (dto.username) {
       const existing = await this.findByUsername(dto.username);
