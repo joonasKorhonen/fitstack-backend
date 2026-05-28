@@ -55,7 +55,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const token = req.cookies?.[REFRESH_COOKIE_NAME];
+    const token = this.readRefreshCookie(req);
     if (!token) throw new UnauthorizedException('No refresh token');
 
     const { accessToken, refreshToken } = await this.auth.refresh(token);
@@ -69,7 +69,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const token = req.cookies?.[REFRESH_COOKIE_NAME];
+    const token = this.readRefreshCookie(req);
     if (token) await this.auth.logout(token);
     this.clearRefreshCookie(res);
     return { message: 'Logged out successfully' };
@@ -104,5 +104,10 @@ export class AuthController {
       sameSite: 'lax',
       path: '/',
     });
+  }
+
+  private readRefreshCookie(req: Request): string | undefined {
+    const cookies = req.cookies as Record<string, string> | undefined;
+    return cookies?.[REFRESH_COOKIE_NAME];
   }
 }
