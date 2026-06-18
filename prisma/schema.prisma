@@ -12,82 +12,91 @@ model User {
   username      String               @unique
   email         String?              @unique
   password      String
-  avatarUrl     String?
+  avatarPath    String?              @map("avatar_path")
   workouts      Workout[]
   meals         Meal[]
   movements     Movement[]
   refreshTokens RefreshToken[]
   resetTokens   PasswordResetToken[]
-  createdAt     DateTime             @default(now())
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  @@map("users")
 }
 
 model PasswordResetToken {
   id        Int      @id @default(autoincrement())
-  tokenHash String   @unique
-  userId    Int
+  tokenHash String   @unique @map("token_hash")
+  userId    Int      @map("user_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model RefreshToken {
   id          Int      @id @default(autoincrement())
   token       String
-  tokenFamily String   @unique
-  userId      Int
+  tokenFamily String   @unique @map("token_family")
+  userId      Int      @map("user_id")
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  deletedAt   DateTime? @map("deleted_at")
 
   @@index([userId])
+  @@map("refresh_tokens")
 }
 
 model Workout {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  date      DateTime @default(now())
+  id        Int          @id @default(autoincrement())
+  userId    Int          @map("user_id")
+  date      DateTime     @default(now())
   exercise  String
   reps      Int
   weight    Float?
   notes     String?
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime  @updatedAt
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
   sets      WorkoutSet[]
+
+  @@map("workouts")
 }
 
 model WorkoutSet {
-  id          Int       @id @default(autoincrement())
-  exercise    String?
-  movementId  Int?
-  movement    Movement? @relation(fields: [movementId], references: [id], onDelete: SetNull)
-  reps        Int
-  weight      Float?
-  intensity   Int?
-  notes       String?
-  workoutId   Int
-  workout     Workout   @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  id         Int       @id @default(autoincrement())
+  exercise   String?
+  movementId Int?      @map("movement_id")
+  movement   Movement? @relation(fields: [movementId], references: [id], onDelete: SetNull)
+  reps       Int
+  weight     Float?
+  intensity  Int?
+  notes      String?
+  workoutId  Int       @map("workout_id")
+  workout    Workout   @relation(fields: [workoutId], references: [id], onDelete: Cascade)
 
   @@index([movementId])
+  @@map("workout_sets")
 }
 
 model Movement {
   id        Int          @id @default(autoincrement())
-  userId    Int
+  userId    Int          @map("user_id")
   name      String
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   sets      WorkoutSet[]
-  createdAt DateTime     @default(now())
+  createdAt DateTime     @default(now()) @map("created_at")
 
   @@unique([userId, name])
   @@index([userId])
+  @@map("movements")
 }
 
 model Meal {
   id        Int      @id @default(autoincrement())
-  userId    Int
+  userId    Int      @map("user_id")
   date      DateTime @default(now())
   title     String
   calories  Int
@@ -96,5 +105,7 @@ model Meal {
   fat       Int?
   notes     String?
   user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("meals")
 }

@@ -33,6 +33,14 @@ export class S3Service {
     });
   }
 
+  /**
+   * Upload a file to S3 and return its object key (not the full URL).
+   * Use {@link getUrl} to derive the public URL when needed.
+   *
+   * @param file       The file buffer and metadata from Multer.
+   * @param keyPrefix  S3 key prefix, e.g. "avatars/42".
+   * @returns          The S3 object key, e.g. "avatars/42/<uuid>.webp".
+   */
   async uploadFile(
     file: Express.Multer.File,
     keyPrefix: string,
@@ -55,13 +63,25 @@ export class S3Service {
       );
     }
 
+    return key;
+  }
+
+  /**
+   * Generate the public HTTPS URL for a stored S3 object key.
+   *
+   * @param key  The S3 object key, e.g. "avatars/42/<uuid>.webp".
+   * @returns    Full public URL.
+   */
+  getUrl(key: string): string {
     return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
   }
 
-  async deleteByUrl(url: string): Promise<void> {
-    const key = this.extractKey(url);
-    if (!key) return;
-
+  /**
+   * Delete an S3 object by its key.
+   *
+   * @param key  The S3 object key to delete.
+   */
+  async deleteByKey(key: string): Promise<void> {
     try {
       await this.client.send(
         new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
@@ -71,10 +91,5 @@ export class S3Service {
         `Tiedoston poisto epäonnistui: ${(err as Error).message}`,
       );
     }
-  }
-
-  private extractKey(url: string): string | null {
-    const prefix = `https://${this.bucket}.s3.${this.region}.amazonaws.com/`;
-    return url.startsWith(prefix) ? url.slice(prefix.length) : null;
   }
 }

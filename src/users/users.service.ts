@@ -21,23 +21,45 @@ export class UsersService {
     private s3: S3Service,
   ) {}
 
+  /**
+   * Map a Prisma user record to the public DTO.
+   * Converts the stored S3 key (avatarPath) to a full public URL (avatarUrl).
+   */
+  private toDto(user: {
+    id: number;
+    username: string;
+    email: string | null;
+    avatarPath: string | null;
+    createdAt: Date;
+  }): UserResponseDto {
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      avatarUrl: user.avatarPath ? this.s3.getUrl(user.avatarPath) : null,
+      createdAt: user.createdAt,
+    };
+  }
+
+  private readonly userSelect = {
+    id: true,
+    username: true,
+    email: true,
+    avatarPath: true,
+    createdAt: true,
+  } as const;
+
   async findById(userId: number): Promise<UserResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        avatarUrl: true,
-        createdAt: true,
-      },
+      select: this.userSelect,
     });
 
     if (!user) {
       throw new NotFoundException('Käyttäjää ei löytynyt');
     }
 
-    return user;
+    return this.toDto(user);
   }
 
   async findByUsername(username: string): Promise<User | null> {
@@ -83,26 +105,20 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: updateData,
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        avatarUrl: true,
-        createdAt: true,
-      },
+      select: this.userSelect,
     });
 
-    return user;
+    return this.toDto(user);
   }
 
   async deleteUser(userId: number): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { avatarUrl: true },
+      select: { avatarPath: true },
     });
 
-    if (user?.avatarUrl) {
-      await this.s3.deleteByUrl(user.avatarUrl);
+    if (user?.avatarPath) {
+      await this.s3.deleteByKey(user.avatarPath);
     }
 
     await this.prisma.user.delete({
@@ -118,7 +134,7 @@ export class UsersService {
   ): Promise<UserResponseDto> {
     const existing = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { avatarUrl: true },
+      select: { avatarPath: true },
     });
 
     if (!existing) {
@@ -131,7 +147,8 @@ export class UsersService {
       .webp({ quality: AVATAR_QUALITY })
       .toBuffer();
 
-    const url = await this.s3.uploadFile(
+    // 1. Upload new file first — if this fails, nothing is lost
+    const newKey = await this.s3.uploadFile(
       {
         ...file,
         buffer: processed,
@@ -141,49 +158,41 @@ export class UsersService {
       `avatars/${userId}`,
     );
 
+    // 2. Persist the new key
     const updated = await this.prisma.user.update({
       where: { id: userId },
-      data: { avatarUrl: url },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        avatarUrl: true,
-        createdAt: true,
-      },
+      data: { avatarPath: newKey },
+      select: this.userSelect,
     });
 
-    if (existing.avatarUrl) {
-      await this.s3.deleteByUrl(existing.avatarUrl);
+    // 3. Delete the old file last — a failure here is harmless
+    if (existing.avatarPath) {
+      await this.s3.deleteByKey(existing.avatarPath);
     }
 
-    return updated;
+    return this.toDto(updated);
   }
 
   async deleteAvatar(userId: number): Promise<UserResponseDto> {
     const existing = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { avatarUrl: true },
+      select: { avatarPath: true },
     });
 
     if (!existing) {
       throw new NotFoundException('Käyttäjää ei löytynyt');
     }
 
-    if (existing.avatarUrl) {
-      await this.s3.deleteByUrl(existing.avatarUrl);
+    if (existing.avatarPath) {
+      await this.s3.deleteByKey(existing.avatarPath);
     }
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
-      data: { avatarUrl: null },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        avatarUrl: true,
-        createdAt: true,
-      },
+      data: { avatarPath: null },
+      select: this.userSelect,
     });
+
+    return this.toDto(updated);
   }
 }
