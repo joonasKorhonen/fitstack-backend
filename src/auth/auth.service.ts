@@ -17,7 +17,13 @@ export class AuthService {
     private prisma: PrismaService,
     private mail: MailService,
   ) {}
-  private JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
+  private JWT_SECRET = (() => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret || secret === 'supersecret') {
+      throw new Error('JWT_SECRET must be set to a secure random value');
+    }
+    return secret;
+  })();
 
   private generateAccessToken(userId: number, username: string): string {
     return jwt.sign({ userId, username }, this.JWT_SECRET, {

@@ -3,7 +3,9 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
 
@@ -67,13 +69,14 @@ export class S3Service {
   }
 
   /**
-   * Generate the public HTTPS URL for a stored S3 object key.
+   * Generate a presigned URL for a stored S3 object key, valid for 15 minutes.
    *
    * @param key  The S3 object key, e.g. "avatars/42/<uuid>.webp".
-   * @returns    Full public URL.
+   * @returns    Presigned URL (expires in 15 min).
    */
-  getUrl(key: string): string {
-    return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
+  async getPresignedUrl(key: string): Promise<string> {
+    const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
+    return getSignedUrl(this.client, command, { expiresIn: 900 });
   }
 
   /**

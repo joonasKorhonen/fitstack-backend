@@ -25,10 +25,11 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = jwt.verify(
-        token,
-        process.env.JWT_SECRET || 'supersecret',
-      ) as JwtPayload;
+      const secret = process.env.JWT_SECRET;
+      if (!secret || secret === 'supersecret') {
+        throw new Error('JWT_SECRET must be set to a secure random value');
+      }
+      const payload = jwt.verify(token, secret) as JwtPayload;
       request.user = payload;
       return true;
     } catch {

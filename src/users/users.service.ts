@@ -21,22 +21,20 @@ export class UsersService {
     private s3: S3Service,
   ) {}
 
-  /**
-   * Map a Prisma user record to the public DTO.
-   * Converts the stored S3 key (avatarPath) to a full public URL (avatarUrl).
-   */
-  private toDto(user: {
+  private async toDto(user: {
     id: number;
     username: string;
     email: string | null;
     avatarPath: string | null;
     createdAt: Date;
-  }): UserResponseDto {
+  }): Promise<UserResponseDto> {
     return {
       id: user.id,
       username: user.username,
       email: user.email,
-      avatarUrl: user.avatarPath ? this.s3.getUrl(user.avatarPath) : null,
+      avatarUrl: user.avatarPath
+        ? await this.s3.getPresignedUrl(user.avatarPath)
+        : null,
       createdAt: user.createdAt,
     };
   }
@@ -59,7 +57,7 @@ export class UsersService {
       throw new NotFoundException('Käyttäjää ei löytynyt');
     }
 
-    return this.toDto(user);
+    return await this.toDto(user);
   }
 
   async findByUsername(username: string): Promise<User | null> {
@@ -108,7 +106,7 @@ export class UsersService {
       select: this.userSelect,
     });
 
-    return this.toDto(user);
+    return await this.toDto(user);
   }
 
   async deleteUser(userId: number): Promise<{ message: string }> {
@@ -141,6 +139,11 @@ export class UsersService {
       throw new NotFoundException('Käyttäjää ei löytynyt');
     }
 
+    const metadata = await sharp(file.buffer).metadata();
+    if ((metadata.width ?? 0) > 10_000 || (metadata.height ?? 0) > 10_000) {
+      throw new BadRequestException('Image dimensions too large');
+    }
+
     const processed = await sharp(file.buffer)
       .rotate()
       .resize(AVATAR_SIZE, AVATAR_SIZE, { fit: 'cover', position: 'centre' })
@@ -170,7 +173,7 @@ export class UsersService {
       await this.s3.deleteByKey(existing.avatarPath);
     }
 
-    return this.toDto(updated);
+    return await this.toDto(updated);
   }
 
   async deleteAvatar(userId: number): Promise<UserResponseDto> {
@@ -193,6 +196,6 @@ export class UsersService {
       select: this.userSelect,
     });
 
-    return this.toDto(updated);
+    return await this.toDto(updated);
   }
 }

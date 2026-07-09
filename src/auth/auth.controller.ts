@@ -8,6 +8,7 @@ import {
   Res,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -23,6 +24,7 @@ export class AuthController {
   constructor(private auth: AuthService) {}
 
   @Post('register')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   async register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
@@ -77,6 +79,7 @@ export class AuthController {
 
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.auth.requestPasswordReset(dto.email);
   }
