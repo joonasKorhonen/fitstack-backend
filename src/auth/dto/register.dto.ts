@@ -1,10 +1,4 @@
-import {
-  IsString,
-  MinLength,
-  MaxLength,
-  IsOptional,
-  IsEmail,
-} from 'class-validator';
+import { IsString, MinLength, MaxLength, IsEmail } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
@@ -12,10 +6,9 @@ export class RegisterDto {
   @MaxLength(20)
   username: string;
 
-  @IsOptional()
   @IsEmail({}, { message: 'Sähköpostiosoite ei ole kelvollinen' })
   @MaxLength(254)
-  email?: string;
+  email: string;
 
   @IsString()
   @MinLength(6)

@@ -73,22 +73,18 @@ export class AuthService {
     return tokenRecord;
   }
 
-  async register(username: string, password: string, email?: string) {
+  async register(username: string, password: string, email: string) {
     const existing = await this.prisma.user.findUnique({
       where: { username },
     });
     if (existing) throw new BadRequestException('Username already exists');
 
-    if (email) {
-      const emailTaken = await this.prisma.user.findUnique({
-        where: { email },
-      });
-      if (emailTaken) throw new BadRequestException('Email already in use');
-    }
+    const emailTaken = await this.prisma.user.findUnique({ where: { email } });
+    if (emailTaken) throw new BadRequestException('Email already in use');
 
     const hashed = await bcrypt.hash(password, 10);
     const user = await this.prisma.user.create({
-      data: { username, password: hashed, email: email ?? null },
+      data: { username, password: hashed, email },
     });
 
     const accessToken = this.generateAccessToken(user.id, user.username);
