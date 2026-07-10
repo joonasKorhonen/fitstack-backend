@@ -5,6 +5,11 @@ import { PrismaService } from './prisma/prisma.service';
 export class AppController {
   constructor(private prisma: PrismaService) {}
 
+  @Get('health')
+  health() {
+    return { ok: true };
+  }
+
   @Get('db-health')
   async dbHealth() {
     const now = await this.prisma.$queryRaw`SELECT NOW()`;
